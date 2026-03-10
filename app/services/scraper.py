@@ -37,15 +37,18 @@ def _extract(response: Any, config: ExtractConfig) -> dict[str, dict[str, list[s
 
 
 def _build_response(response: Any, elapsed_ms: int, extract: ExtractConfig | None) -> ScrapeResponse:
-    cookies = response.cookies
-    if isinstance(cookies, (list, tuple)):
-        merged: dict[str, str] = {}
-        for d in cookies:
-            if isinstance(d, dict):
-                merged.update(d)
-        cookies = merged
-    elif not isinstance(cookies, dict):
-        cookies = {}
+    raw_cookies = response.cookies
+    cookies: dict[str, str] = {}
+    if isinstance(raw_cookies, dict):
+        cookies = {k: str(v) for k, v in raw_cookies.items()}
+    elif isinstance(raw_cookies, (list, tuple)):
+        for item in raw_cookies:
+            if isinstance(item, dict):
+                if "name" in item and "value" in item:
+                    cookies[str(item["name"])] = str(item["value"])
+                else:
+                    for k, v in item.items():
+                        cookies[str(k)] = str(v)
 
     headers = dict(response.headers) if response.headers else {}
 
@@ -113,7 +116,7 @@ async def fetch_dynamic(req: DynamicRequest) -> ScrapeResponse:
         "headless": req.headless,
         "disable_resources": req.disable_resources,
         "network_idle": req.network_idle,
-        "timeout": req.timeout,
+        "timeout": req.timeout * 1000,
     }
     if req.wait_selector:
         kwargs["wait_selector"] = req.wait_selector
@@ -132,7 +135,7 @@ async def fetch_dynamic(req: DynamicRequest) -> ScrapeResponse:
 async def fetch_stealth(req: StealthRequest) -> ScrapeResponse:
     kwargs: dict[str, Any] = {
         "headless": req.headless,
-        "timeout": req.timeout,
+        "timeout": req.timeout * 1000,
         "block_webrtc": req.block_webrtc,
         "allow_webgl": req.allow_webgl,
         "disable_resources": req.disable_resources,
