@@ -18,7 +18,7 @@ _semaphore: asyncio.Semaphore | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _semaphore
-    _semaphore = asyncio.Semaphore(settings.api_max_concurrent)
+    _semaphore = asyncio.Semaphore(settings.max_concurrent)
     yield
 
 
@@ -28,9 +28,9 @@ app = FastAPI(title="Scrapling API", version="1.0.0", lifespan=lifespan)
 # --- Middleware: API key authentication ---
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
-    if settings.api_key and request.url.path != "/health":
+    if settings.key and request.url.path != "/health":
         api_key = request.headers.get("X-API-Key", "")
-        if api_key != settings.api_key:
+        if api_key != settings.key:
             return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
     return await call_next(request)
 
@@ -52,9 +52,9 @@ async def concurrency_middleware(request: Request, call_next):
 async def timeout_middleware(request: Request, call_next):
     if request.url.path in ("/fetch", "/dynamic", "/stealth"):
         max_timeout = (
-            settings.api_stealth_timeout_max
+            settings.stealth_timeout_max
             if request.url.path == "/stealth"
-            else settings.api_timeout_max
+            else settings.timeout_max
         )
         try:
             return await asyncio.wait_for(call_next(request), timeout=max_timeout + 5)
