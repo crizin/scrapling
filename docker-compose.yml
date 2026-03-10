@@ -1,0 +1,15 @@
+services:
+  scrapling-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - API_TIMEOUT_MAX=120
+      - API_STEALTH_TIMEOUT_MAX=180
+      - API_MAX_CONCURRENT=10
+      - API_KEY=
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+    restart: unless-stopped

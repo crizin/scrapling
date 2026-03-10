@@ -1,0 +1,9 @@
+.git
+.github
+.gitignore
+.dockerignore
+*.md
+LICENSE
+__pycache__
+*.pyc
+.env
